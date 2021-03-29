@@ -132,11 +132,21 @@ void upload(void)
 		return;
 	}
 
-	pf("请输入文件名:");
 	char pathname[100] = {};
 	char *filename = malloc(50);
 	memset(filename, 0, 50);
-	get_str(pathname, 100);
+	while(1)
+	{
+		pf("请输入文件名:");
+		get_str(pathname, 100);
+		if(!strncmp(pathname, "..", 3) || !strncmp(pathname, ".", 3))
+		{
+			pf(".或..不是普通文件，请重新输入！\n");
+			continue;
+		}
+		break;
+	}	
+
 	int fd = open(pathname, O_RDONLY);
 
 	struct stat stat = {};
@@ -287,9 +297,9 @@ void download(void)
 	{
 		pf("请输入要下载的文件名:");
 		get_str(filename, 50);
-		if(!strncmp(filename, "..", 3))
+		if(!strncmp(filename, "..", 3) || !strncmp(filename, ".", 3))
 		{
-			pf("..不是普通文件，无法下载，请重新输入！");
+			pf(".或..不是普通文件，无法下载，请重新输入！\n");
 			continue;		
 		}
 		break;
