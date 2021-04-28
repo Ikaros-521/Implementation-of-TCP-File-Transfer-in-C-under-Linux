@@ -170,7 +170,7 @@ void c_up(int *clifd)
 	pf("收到文件名:%s\n", filename);
 	usleep(100000);
 	w_size = write(*clifd, "success", 8);
-	pf("发送success给客户端\n", r_size);
+	pf("发送success给客户端\n");
 
 	int fd = open(filename, O_CREAT | O_RDWR, 0777);
 
@@ -235,7 +235,7 @@ void c_down(int *clifd)
 		strcat(list, " ");
 	}
 	pf("当前目录列表:%s\n", list);
-	pf("strlen(list):%d\n", strlen(list));
+	pf("strlen(list):%d\n", (int)strlen(list));
 	int l_size = write(*clifd, list, strlen(list)+1);
 	pf("发送当前下载目录列表给客户端\n");
 
