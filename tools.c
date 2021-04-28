@@ -2,12 +2,37 @@
 #include <string.h>
 #include <stdbool.h>
 
+//　修改终端的控制方式，1取消回显、确认　２获取数据　3还原
+int getch(void)
+{
+    // 记录终端的配置信息
+    struct termios old;
+    // 获取终端的配置信息
+    tcgetattr(STDIN_FILENO,&old);
+    // 设置新的终端配置   
+    struct termios new1 = old;
+    // 取消确认、回显
+    new1.c_lflag &= ~(ICANON|ECHO);
+    // 设置终端配置信息
+    tcsetattr(STDIN_FILENO,TCSANOW,&new1);
+
+    // 在新模式下获取数据   
+    int key_val = 0; 
+    do{
+    	key_val += getchar();
+    }while(stdin->_IO_read_end - stdin->_IO_read_ptr);
+
+    // 还原配置信息
+    tcsetattr(STDIN_FILENO,TCSANOW,&old); 
+    return key_val; 
+}
+
 void clear_stdin(void)
 {
 	stdin->_IO_read_ptr = stdin->_IO_read_end;//清理输入缓冲区
 }
 
-char* get_str(char* str,size_t len)
+char* get_str(char* str, size_t len)
 {
 	if(NULL == str)
 	{
@@ -15,7 +40,9 @@ char* get_str(char* str,size_t len)
 		return NULL;
 	}
 
-	char *in=fgets(str,len,stdin);
+	char *in = fgets(str, len, stdin);
+	if(NULL == in)
+		return str;
 	
 	size_t cnt = strlen(str);
 	if('\n' == str[cnt-1])

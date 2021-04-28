@@ -107,6 +107,10 @@ void *start_run(void *arg)
 	for (;;)
 	{
 		c_size = read(*clifd, cmd, sizeof(cmd));
+		if(-1 == c_size)
+		{
+			pf("read函数出错！\n");
+		}
 		
 		if (strcmp(up, cmd) == 0)
 		{
@@ -167,6 +171,10 @@ void c_up(int *clifd)
 	char filename[50] = {};
 	memset(filename, 0, sizeof(filename));
 	int f_size = read(*clifd, filename, sizeof(filename));
+	if(-1 == f_size)
+	{
+		pf("read函数出错！\n");
+	}
 	pf("收到文件名:%s\n", filename);
 	usleep(100000);
 	w_size = write(*clifd, "success", 8);
@@ -237,10 +245,18 @@ void c_down(int *clifd)
 	pf("当前目录列表:%s\n", list);
 	pf("strlen(list):%d\n", (int)strlen(list));
 	int l_size = write(*clifd, list, strlen(list)+1);
+	if(-1 == l_size)
+	{
+		pf("read函数出错！\n");
+	}
 	pf("发送当前下载目录列表给客户端\n");
 
 	pf("等待接收文件名...\n");
 	int f_size = read(*clifd, filename, sizeof(filename));
+	if(-1 == f_size)
+	{
+		pf("read函数出错！\n");
+	}
 	//pf("filename:%s\n", filename);
 	strncpy(filename2, filename, 50);
 	strcat(filename2, " ");
@@ -327,11 +343,19 @@ void c_list(int *clifd)
 	}
 
 	int l_size = write(*clifd, list, strlen(list) + 1);
+	if(-1 == l_size)
+	{
+		pf("write函数出错！\n");
+	}
 
 	memset(list, 0, 1024);
 
 	char dirname[20] = {};
 	int d_size = read(*clifd, dirname, sizeof(dirname));
+	if(-1 == d_size)
+	{
+		pf("read函数出错！\n");
+	}
 	pf("收到客户端的数据:%s\n", dirname);
 
 	if(strncmp(dirname, "...", 20) == 0)
@@ -368,6 +392,10 @@ void c_list(int *clifd)
 		{
 			char result[20] = "目录名错误";
 			int err = write(*clifd, result, strlen(result) + 1);
+			if(-1 == err)
+			{
+				pf("write函数出错！\n");
+			}
 		}
 		else
 		{

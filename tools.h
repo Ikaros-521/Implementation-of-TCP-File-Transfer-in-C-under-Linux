@@ -2,11 +2,13 @@
 #define TOOL_H
 
 #include <stdio.h>
-
-#include "tools.h"
 #include <string.h>
-#include "getch.h"
 #include <stdbool.h>
+#include <termios.h>
+#include <unistd.h>
+
+//　修改终端的控制方式，1取消回显、确认　２获取数据　3还原
+int getch(void);
 
 void clear_stdin(void);
 

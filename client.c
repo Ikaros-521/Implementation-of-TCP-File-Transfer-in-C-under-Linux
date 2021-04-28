@@ -149,10 +149,10 @@ void upload(void)
 
 	int fd = open(pathname, O_RDONLY);
 
-	struct stat stat = {};
-	int fs = fstat(fd, &stat);
-	long file_size = 0;
-	file_size = stat.st_size;
+	// struct stat stat = {};
+	// int fs = fstat(fd, &stat);
+	// long file_size = 0;
+	// file_size = stat.st_size;
 
 	if (fd == -1)
 	{
@@ -399,7 +399,7 @@ void c_list(void)
 // 退出程序
 void quit(void)
 {
-	char buf[100] = {};
+	// char buf[100] = {};
 	pf("告知服务端，我要走了");
 	char quit[20] = "我要走了";
 	write(sockfd, quit, strlen(quit) + 1);

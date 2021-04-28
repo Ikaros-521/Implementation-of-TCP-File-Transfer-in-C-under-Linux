@@ -1,4 +1,4 @@
-FLAG=-Werror
+FLAG=-Wall -Werror
 STD=-std=gnu99
 CC=gcc
 
