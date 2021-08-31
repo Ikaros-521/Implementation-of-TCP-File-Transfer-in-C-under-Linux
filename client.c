@@ -45,7 +45,7 @@ void quit(void);
 // 主函数
 int main()
 {
-	pf("服务器创建socket...\n");
+	pf("[%s] 服务器创建socket...\n", get_time(2));
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (0 > sockfd)
 	{
@@ -53,7 +53,7 @@ int main()
 		return -1;
 	}
 
-	pf("准备地址...\n");
+	pf("[%s] 准备地址...\n", get_time(2));
 	struct sockaddr_in addr = {};
 	addr.sin_family = AF_INET;
 	// 端口自己修改
@@ -62,7 +62,7 @@ int main()
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	socklen_t len = sizeof(addr);
 
-	pf("绑定连接服务器...\n");
+	pf("[%s] 绑定连接服务器...\n", get_time(2));
 	if (connect(sockfd, (struct sockaddr *)&addr, len))
 	{
 		perror("connect");
@@ -127,7 +127,7 @@ void upload(void)
 	r_size = read(sockfd, buf, sizeof(buf));
 	if(strncmp(buf, "success", 10) != 0)
 	{
-		pf("收到服务端异常数据\n");
+		pf("[%s] 收到服务端异常数据\n", get_time(2));
 		getch();
 		return;
 	}
@@ -156,14 +156,18 @@ void upload(void)
 
 	if (fd == -1)
 	{
-		pf("文件不存在\n");
+		pf("[%s] 文件不存在\n", get_time(2));
 		write(sockfd, "error", 6);
 		getch();
 	}
 	else
 	{
 		write(sockfd, "success", 8);
-		usleep(100000);
+		r_size = read(sockfd, buf, sizeof(buf));
+		if(strncmp(buf, "success", 8) == 0)
+		{
+			pf("[%s] 服务端已经可以接收文件名，准备发送文件名\n", get_time(2));
+		}
 
 		if (strrchr(pathname, '/') == NULL)
 		{
@@ -175,25 +179,54 @@ void upload(void)
 			filename += 1;
 		}
 
-		pf("发送文件名:%s 至服务端\n", filename);
+		pf("[%s] 发送文件名:%s 至服务端\n", get_time(2), filename);
 		write(sockfd, filename, strlen(filename) + 1);
 
-		usleep(100000);
+		// 读取服务端返回的文件名，用于判断服务端是否获取到正确的用户名
+		r_size = read(sockfd, buf, sizeof(buf));
+		if(strncmp(buf, filename, strlen(filename)) == 0)
+		{
+			// 发送success给服务端，准备接收文件数据
+			write(sockfd, "success", 8);
+			pf("[%s] 校验服务端接收到的文件名成功，准备开始文件传输\n", get_time(2));
+		}
+		else
+		{
+			// 发送failed给服务端，终止接收文件
+			write(sockfd, "failed", 7);
+			pf("[%s] 校验服务端接收到的文件名失败，文件传输终止\n", get_time(2));
+			return;
+		}
+		r_size = 0;
 
 		memset(buf, 0, sizeof(buf));
 		r_size = read(sockfd, buf, sizeof(buf));
 		if(strncmp(buf, "success", 10) != 0)
 		{
-			pf("收到服务端异常数据\n");
+			pf("[%s] 收到服务端异常数据\n", get_time(2));
 			getch();
 			return;
 		}
 		else
 		{
-			pf("收到服务端返回success\n");
+			pf("[%s] 收到服务端返回success，可以开始文件传输\n", get_time(2));
 		}
 		
 		sleep(1);
+
+		memset(buf, 0, sizeof(buf));
+		snprintf(buf, 150, "ls -ll %s | awk '{print $5}'", pathname);
+		FILE* temp_fp = NULL;
+		temp_fp = popen(buf, "r");
+		if (temp_fp == NULL)
+		{
+			pf("[%s] 获取文件大小失败\n", get_time(2));
+		}
+		memset(buf, 0, sizeof(buf));
+		fscanf(temp_fp, "%s", buf);
+		pf("[%s] 文件大小:%sB\n", get_time(2), buf);
+		pclose(temp_fp);
+		memset(buf, 0, sizeof(buf));
 
 		//设置文件读写位置为文件尾部
 		lseek(fd, 0, SEEK_END);
@@ -248,15 +281,15 @@ void upload(void)
 		read(sockfd, result, sizeof(result));
 		if(strncmp(buf2, "success", 10) == 0)
 		{
-			pf("成功收到服务端返回值:%s,服务器接收文件成功\n", result);
+			pf("[%s] 成功收到服务端返回值:%s,服务器接收文件成功\n", get_time(2), result);
 		}
 		else if(strncmp(buf2, "error", 10) == 0)
 		{
-			pf("成功收到服务端返回值:%s,服务器接收文件异常\n", result);
+			pf("[%s] 成功收到服务端返回值:%s,服务器接收文件异常\n", get_time(2), result);
 		}
 		else
 		{
-			pf("收到服务端返回值:%s,数据异常\n", result);
+			pf("[%s] 收到服务端返回值:%s,数据异常\n", get_time(2), result);
 		}
 			
 		getch();
@@ -279,15 +312,17 @@ void download(void)
 	r_size = read(sockfd, buf, sizeof(buf));
 	if(strncmp(buf, "success", 10) != 0)
 	{
-		pf("收到服务端异常数据\n");
+		pf("[%s] 收到服务端异常数据\n", get_time(2));
 		getch();
 		return;
 	}
 	else
 	{
-		pf("服务端成功接收命令\n");
+		pf("[%s] 服务端成功接收命令\n", get_time(2));
 	}
 
+	// 发送给服务端success，告知可以开始目录列表的发送
+	write(sockfd, "success", 8);
 	read(sockfd, list, sizeof(list));
 	pf("服务端目录列表:%s\n", list);
 
@@ -310,17 +345,17 @@ void download(void)
 	read(sockfd, result, sizeof(result));
 	if(strncmp(result, "success", 8) == 0)
 	{
-		pf("收到服务端发送的数据:%s 文件准备下载\n", result);
+		pf("[%s] 收到服务端发送的数据:%s 文件准备下载\n", get_time(2), result);
 	}
 	else if(strncmp(result, "error", 8) == 0)
 	{
-		pf("收到服务端发送的数据:%s 文件不存在\n", result);
+		pf("[%s] 收到服务端发送的数据:%s 文件不存在\n", get_time(2), result);
 		getch();
 		return;
 	}
 	else
 	{
-		pf("收到服务端发送的数据:%s 数据异常,下载终止\n", result);
+		pf("[%s] 收到服务端发送的数据:%s 数据异常,下载终止\n", get_time(2), result);
 		getch();
 		return;
 	}
@@ -339,7 +374,7 @@ void download(void)
 		pf("发送success给服务端]\n");
 	} while (r_size == 1024);
 	usleep(1000000);
-	pf("    文件:%s 下载完毕\n", filename);
+	pf("[%s]     文件:%s 下载完毕\n", get_time(2), filename);
 	close(fd);
 	getch();
 	return;
@@ -400,12 +435,12 @@ void c_list(void)
 void quit(void)
 {
 	// char buf[100] = {};
-	pf("告知服务端，我要走了");
+	pf("[%s] 告知服务端，我要走了\n", get_time(2));
 	char quit[20] = "我要走了";
 	write(sockfd, quit, strlen(quit) + 1);
 
 	usleep(10000);
 
-	pf("程序退出\n");
+	pf("[%s] 程序退出\n", get_time(2));
 	return;
 }

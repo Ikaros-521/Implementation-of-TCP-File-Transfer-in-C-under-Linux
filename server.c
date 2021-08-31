@@ -40,7 +40,7 @@ typedef struct LS
 // 主函数
 int main()
 {
-	pf("服务器创建socket...\n");
+	pf("[%s] 服务器创建socket...\n", get_time(2));
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (0 > sockfd)
 	{
@@ -48,7 +48,7 @@ int main()
 		return -1;
 	}
 
-	pf("准备地址...\n");
+	pf("[%s] 准备地址...\n", get_time(2));
 	struct sockaddr_in addr = {};
 	addr.sin_family = AF_INET;
 	// 端口 IP 自行修改
@@ -56,21 +56,21 @@ int main()
 	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 	socklen_t len = sizeof(addr);
 
-	pf("绑定socket与地址...\n");
+	pf("[%s] 绑定socket与地址...\n", get_time(2));
 	if (bind(sockfd, (struct sockaddr *)&addr, len))
 	{
 		perror("bind");
 		return -1;
 	}
 
-	pf("设置监听...\n");
+	pf("[%s] 设置监听...\n", get_time(2));
 	if (listen(sockfd, 5))
 	{
 		perror("listen");
 		return -1;
 	}
 
-	pf("等待客户端连接...\n");
+	pf("[%s] 等待客户端连接...\n", get_time(2));
 	for (;;)
 	{
 		struct sockaddr_in addrcli = {};
@@ -109,30 +109,30 @@ void *start_run(void *arg)
 		c_size = read(*clifd, cmd, sizeof(cmd));
 		if(-1 == c_size)
 		{
-			pf("read函数出错！\n");
+			pf("[%s] read函数出错！\n", get_time(2));
 		}
 		
 		if (strcmp(up, cmd) == 0)
 		{
-			pf("收到客户端的上传指令\n");
+			pf("[%s] 收到客户端的上传指令\n", get_time(2));
 			c_up(clifd);
 			memset(cmd, 0, 20);
 		}
 		else if (strcmp(down, cmd) == 0)
 		{
-			pf("收到客户端的下载指令\n");
+			pf("[%s] 收到客户端的下载指令\n", get_time(2));
 			c_down(clifd);
 			memset(cmd, 0, 20);
 		}
 		else if (strcmp(see, cmd) == 0)
 		{
-			pf("收到客户端的目录指令\n");
+			pf("[%s] 收到客户端的目录指令\n", get_time(2));
 			c_list(clifd);
 			memset(cmd, 0, 20);
 		}
 		else if (strcmp(quit, cmd) == 0)
 		{
-			pf("收到服务端的退出指令\n");
+			pf("[%s] 收到服务端的退出指令\n", get_time(2));
 			pthread_exit(0);
 			return (void *)NULL;
 		}
@@ -154,31 +154,49 @@ void c_up(int *clifd)
 	read(*clifd, buf, 10);
 	if(strncmp(buf, "error", 10) == 0)
 	{
-		printf("收到客户端返回error,接收终止\n");
+		printf("[%s] 收到客户端返回error,接收终止\n", get_time(2));
 		return;
 	}
 	else if(strncmp(buf, "success", 10) == 0)
 	{
-		printf("收到客户端返回success,继续接收\n");
+		printf("[%s] 收到客户端返回success,继续接收\n", get_time(2));
 	}
 	else
 	{
-		printf("收到客户端异常数据:%s,接收终止\n", buf);
+		printf("[%s] 收到客户端异常数据:%s,接收终止\n", get_time(2), buf);
 		return;
 	}
-	
 
+	// 用于存储文件名，长度50，不够则需要自行加长
 	char filename[50] = {};
 	memset(filename, 0, sizeof(filename));
+	// 发送success给客户端，告知客户端可以传输文件名
+	w_size = write(*clifd, "success", 8);
 	int f_size = read(*clifd, filename, sizeof(filename));
 	if(-1 == f_size)
 	{
-		pf("read函数出错！\n");
+		pf("[%s] read函数出错！\n", get_time(2));
 	}
-	pf("收到文件名:%s\n", filename);
-	usleep(100000);
+	pf("[%s] 收到文件名:%s\n", get_time(2), filename);
+	usleep(1000);
+
+	// 传回文件名，用于数据可靠性校验
+	w_size = write(*clifd, filename, strlen(filename) + 1);
+	// 读取客户端返回的结果
+	r_size = read(*clifd, buf, sizeof(buf));
+	if(strncmp(buf, "success", 7) == 0)
+	{
+		pf("[%s] 文件名校验成功，准备接收文件\n", get_time(2));
+	}
+	else
+	{
+		pf("[%s] 文件名校验失败，终止接收文件\n", get_time(2));
+		return;
+	}
+
+	// 发送success给客户端，告知可以开始文件传输
 	w_size = write(*clifd, "success", 8);
-	pf("发送success给客户端\n");
+	pf("[%s] 发送success给客户端，可以开始文件传输\n", get_time(2));
 
 	int fd = open(filename, O_CREAT | O_RDWR, 0777);
 
@@ -204,13 +222,13 @@ void c_up(int *clifd)
 	if (flag > 0)
 	{
 		char result[20] = "success";
-		pf("    文件传输完毕 返回客户端success\n\n");
+		pf("[%s]     文件传输完毕 返回客户端success\n\n", get_time(2));
 		write(*clifd, result, strlen(result) + 1);
 	}
 	else
 	{
 		char result[20] = "error";
-		pf("    文件传输失败 返回客户端error\n\n");
+		pf("[%s]     文件传输失败 返回客户端error\n\n", get_time(2));
 		write(*clifd, result, strlen(result) + 1);
 	}
 	close(fd);
@@ -233,8 +251,11 @@ void c_down(int *clifd)
 
 	usleep(10000);
 	w_size = write(*clifd, "success", 8);
-
-	usleep(10000);
+	r_size = read(*clifd, buf, sizeof(buf));
+	if(strncmp(buf, "success", 8) == 0)
+	{
+		pf("[%s] 收到客户端success信息，可以进行目录列表发送\n", get_time(2));
+	}
 
 	// 获取目录下所有文件名
 	while ((dirent = readdir(dir)) != NULL)
@@ -247,15 +268,15 @@ void c_down(int *clifd)
 	int l_size = write(*clifd, list, strlen(list)+1);
 	if(-1 == l_size)
 	{
-		pf("read函数出错！\n");
+		pf("[%s] read函数出错！\n", get_time(2));
 	}
-	pf("发送当前下载目录列表给客户端\n");
+	pf("[%s] 发送当前下载目录列表给客户端\n", get_time(2));
 
-	pf("等待接收文件名...\n");
+	pf("[%s] 等待接收文件名...\n", get_time(2));
 	int f_size = read(*clifd, filename, sizeof(filename));
 	if(-1 == f_size)
 	{
-		pf("read函数出错！\n");
+		pf("[%s] read函数出错！\n", get_time(2));
 	}
 	//pf("filename:%s\n", filename);
 	strncpy(filename2, filename, 50);
@@ -263,7 +284,7 @@ void c_down(int *clifd)
 	if (strstr(list, filename2) == NULL || strncmp(filename2, " ", 1) == 0 || strncmp(filename2, "  ", 2) == 0)
 	{
 		char result[6] = "error";
-		pf("文件:%s 不存在,下载终止\n", filename);
+		pf("[%s] 文件:%s 不存在,下载终止\n", get_time(2), filename);
 
 		write(*clifd, result, strlen(result));
 		return;
@@ -271,8 +292,22 @@ void c_down(int *clifd)
 	else
 	{
 		char result[8] = "success";
-		pf("文件:%s 存在,开始传输文件内容\n", filename);
+		pf("[%s] 文件:%s 存在,开始传输文件内容\n", get_time(2), filename);
 		write(*clifd, result, strlen(result));
+
+		memset(buf, 0, sizeof(buf));
+		snprintf(buf, 150, "ls -ll %s | awk '{print $5}'", filename);
+		FILE* temp_fp = NULL;
+		temp_fp = popen(buf, "r");
+		if (temp_fp == NULL)
+		{
+			pf("[%s] 获取文件大小失败\n", get_time(2));
+		}
+		memset(buf, 0, sizeof(buf));
+		fscanf(temp_fp, "%s", buf);
+		pf("[%s] 文件大小:%sB\n", get_time(2), buf);
+		pclose(temp_fp);
+		memset(buf, 0, sizeof(buf));
 
 		int fd = open(filename, O_RDONLY);
 
@@ -322,7 +357,7 @@ void c_down(int *clifd)
 			}
 		} while (r_size == 1024);
 		usleep(1000000);
-		pf("    文件:%s 发送完毕\n", filename);
+		pf("[%s]     文件:%s 发送完毕\n", get_time(2), filename);
 		close(fd);
 	}
 
@@ -345,7 +380,7 @@ void c_list(int *clifd)
 	int l_size = write(*clifd, list, strlen(list) + 1);
 	if(-1 == l_size)
 	{
-		pf("write函数出错！\n");
+		pf("[%s] write函数出错！\n", get_time(2));
 	}
 
 	memset(list, 0, 1024);
@@ -354,9 +389,9 @@ void c_list(int *clifd)
 	int d_size = read(*clifd, dirname, sizeof(dirname));
 	if(-1 == d_size)
 	{
-		pf("read函数出错！\n");
+		pf("[%s] read函数出错！\n", get_time(2));
 	}
-	pf("收到客户端的数据:%s\n", dirname);
+	pf("[%s] 收到客户端的数据:%s\n", get_time(2), dirname);
 
 	if(strncmp(dirname, "...", 20) == 0)
 	{
@@ -394,7 +429,7 @@ void c_list(int *clifd)
 			int err = write(*clifd, result, strlen(result) + 1);
 			if(-1 == err)
 			{
-				pf("write函数出错！\n");
+				pf("[%s] write函数出错！\n", get_time(2));
 			}
 		}
 		else

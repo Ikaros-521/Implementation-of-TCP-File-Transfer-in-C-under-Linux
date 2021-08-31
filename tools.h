@@ -12,12 +12,15 @@ int getch(void);
 
 void clear_stdin(void);
 
-char* get_str(char* str,size_t len);
+char* get_str(char* str, size_t len);
 
 char get_sex(void);
 
-char get_cmd(char start,char end);
+char get_cmd(char start, char end);
 
-char* get_pw(char* passwd,bool is_show,size_t size);
+char* get_pw(char* passwd, bool is_show, size_t size);
+
+// 获取时间，传入type来获取各种时间
+char* get_time(int type);
 
 #endif//TOOL_h

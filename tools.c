@@ -1,6 +1,8 @@
 #include "tools.h"
 #include <string.h>
 #include <stdbool.h>
+#include <sys/time.h>
+#include <time.h>
 
 //　修改终端的控制方式，1取消回显、确认　２获取数据　3还原
 int getch(void)
@@ -69,7 +71,7 @@ char get_sex(void)
 	}
 }
 
-char get_cmd(char start,char end)
+char get_cmd(char start, char end)
 {
 	clear_stdin();
 
@@ -85,7 +87,7 @@ char get_cmd(char start,char end)
 	}
 }
 
-char* get_pw(char* passwd,bool is_show,size_t size)
+char* get_pw(char* passwd, bool is_show, size_t size)
 {
 	if(NULL == passwd) return NULL;
 
@@ -111,4 +113,39 @@ char* get_pw(char* passwd,bool is_show,size_t size)
 
 	passwd[count] = '\0';
 	return passwd;
+}
+
+// 获取时间，传入type来获取各种时间
+char* get_time(int type)
+{
+	time_t timep;
+	static struct tm *tm_p = NULL;
+	time(&timep);
+	tm_p = localtime(&timep);
+	
+	static char now_time[20] = {};
+
+	if(0 == type)
+	{
+		snprintf(now_time, 1, " ");
+	}
+	else if(1 == type)
+	{
+		snprintf(now_time, 20, "%04d-%02d-%02d", (1900 + tm_p->tm_year), (1 + tm_p->tm_mon), tm_p->tm_mday);
+	}
+	else if(2 == type)
+	{
+		snprintf(now_time, 20, "%04d-%02d-%02d %02d:%02d:%02d",(1900 + tm_p->tm_year), (1 + tm_p->tm_mon), tm_p->tm_mday, 
+			tm_p->tm_hour, tm_p->tm_min, tm_p->tm_sec);
+	}
+	else if(3 == type)
+	{
+		snprintf(now_time, 30, "%04d-%02d-%02d_%02d:%02d:%02d", (1900 + tm_p->tm_year), (1 + tm_p->tm_mon), 
+			tm_p->tm_mday, tm_p->tm_hour, tm_p->tm_min, tm_p->tm_sec);
+	}
+	else
+	{
+	}
+	
+	return now_time;
 }
