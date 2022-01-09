@@ -127,7 +127,7 @@ char* get_time(int type)
 
 	if(0 == type)
 	{
-		snprintf(now_time, 1, " ");
+		snprintf(now_time, 2, " ");
 	}
 	else if(1 == type)
 	{
@@ -140,7 +140,7 @@ char* get_time(int type)
 	}
 	else if(3 == type)
 	{
-		snprintf(now_time, 30, "%04d-%02d-%02d_%02d:%02d:%02d", (1900 + tm_p->tm_year), (1 + tm_p->tm_mon), 
+		snprintf(now_time, 20, "%04d-%02d-%02d_%02d:%02d:%02d", (1900 + tm_p->tm_year), (1 + tm_p->tm_mon), 
 			tm_p->tm_mday, tm_p->tm_hour, tm_p->tm_min, tm_p->tm_sec);
 	}
 	else
